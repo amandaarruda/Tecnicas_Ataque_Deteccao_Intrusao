@@ -1,6 +1,6 @@
 name: Publicar painel no GitHub Pages
 
-# Executar manualmente quando o novo repositório público estiver pronto.
+# Executar manualmente para publicar ou atualizar o painel.
 on:
   workflow_dispatch:
 

@@ -1,5 +1,7 @@
 # Painel web de explicabilidade
 
+**[Abrir o painel publicado](https://amandaarruda.github.io/Tecnicas_Ataque_Deteccao_Intrusao/)**
+
 Versão para GitHub Pages do painel do projeto. A aplicação explora valores SHAP e probabilidades calculados pelo primeiro Random Forest base, na leitura de profundidade variável, em uma amostra do teste do CIRA. Permite escolher uma classe, consultar a importância global, explorar qualquer um dos 29 atributos e examinar a explicação de cada fluxo da amostra.
 
 O navegador usa os dados já calculados em `dados.json`. Não treina modelos nem classifica novos arquivos. O painel Python completo permanece em `project/scripts/painel_xai.py`.
@@ -25,14 +27,13 @@ uv run python scripts/painel_xai.py --export-web ../painel/dados.json --export-o
 
 A exportação repete o treino do sistema com a seed 42 e usa a mesma amostra do painel Python. O JSON contém atributos estatísticos, classes, probabilidades e explicações; não contém IPs, portas, horários nem um modelo serializado. As contribuições são conferidas contra as probabilidades do Random Forest antes da gravação.
 
-## Publicar no novo repositório
+## Atualizar a publicação
 
-1. Envie os arquivos do projeto para o repositório público, incluindo `painel/` e `.github/workflows/painel-pages.yml`.
-2. Em **Settings → Pages → Build and deployment**, selecione **GitHub Actions**.
-3. Em **Actions**, abra **Publicar painel no GitHub Pages** e execute **Run workflow**.
-4. Use o endereço retornado pelo job `publicar` e acrescente o link ao README principal.
+1. Envie as alterações de `painel/` para a branch `main`.
+2. Em **Actions**, abra **Publicar painel no GitHub Pages** e execute **Run workflow** na branch `main`.
+3. Após a conclusão do job `publicar`, o endereço do painel terá a versão atualizada.
 
-O workflow é manual para que o repositório de rascunho não publique automaticamente. Apenas a pasta `painel/` é enviada ao Pages. A configuração segue a [documentação do GitHub Pages](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages).
+A publicação usa GitHub Actions em **Settings → Pages → Build and deployment**. O workflow é executado manualmente e envia apenas a pasta `painel/` ao Pages. A configuração segue a [documentação do GitHub Pages](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages).
 
 ## Biblioteca dos gráficos
 

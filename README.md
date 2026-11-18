@@ -24,7 +24,7 @@ Reimplementamos o sistema a partir do texto do artigo, porque o repositório dos
 | **1. Reproduzir os experimentos do artigo** | Implementação e comparação dos resultados: Tabela I, Fig. 2, Fig. 4, Tabela II, Figs. 5 a 8, Seção VI-D e Fig. 9 | [`results/e0`](project/results/e0/dados/RESUMO.md) a [`e7`](project/results/e7/RESUMO.md) |
 | **2. Outro conjunto de dados** | Tudo refeito no combinado CIRA + HKD sem réplicas; transferência do modelo original para o DoH-Tunnel-Traffic-HKD ao lado | [`results/e6`](project/results/e6/RESUMO.md) |
 | **Experimentos complementares** | Random Forest único com peso de classe, comparações em dez seeds, robustez e custo de inferência | [`results/e8`](project/results/e8/corrigida/RESUMO.md) |
-| **Painel interativo** | Exploração dos atributos e das explicações SHAP de fluxos reais do teste | [Versão web e publicação](painel/README.md) |
+| **Painel interativo** | Exploração dos atributos e das explicações SHAP de fluxos reais do teste | [Abrir painel](https://amandaarruda.github.io/Tecnicas_Ataque_Deteccao_Intrusao/) |
 
 ## O sistema do artigo
 
@@ -50,7 +50,9 @@ flowchart LR
 
 O painel permite escolher uma classe de tráfego, descobrir quais atributos mais pesam na classificação e entender a contribuição de cada atributo na decisão de um fluxo. Também é possível explorar a relação entre um atributo, como a duração, e seu valor SHAP, além de baixar a explicação de um fluxo em CSV.
 
-A **versão web está preparada para GitHub Pages** e usa explicações reais de **999 fluxos do teste do CIRA**, com 333 exemplos por classe. Os valores SHAP e as probabilidades já foram calculados; a navegação funciona no navegador, sem executar o treinamento online. As explicações se referem ao primeiro Random Forest base, na leitura de profundidade variável.
+**[Abrir o painel interativo](https://amandaarruda.github.io/Tecnicas_Ataque_Deteccao_Intrusao/)**
+
+A versão web está publicada no GitHub Pages e usa explicações reais de **999 fluxos do teste do CIRA**, com 333 exemplos por classe. Os valores SHAP e as probabilidades já foram calculados; a navegação funciona no navegador, sem executar o treinamento online. As explicações se referem ao primeiro Random Forest base, na leitura de profundidade variável.
 
 <p align="center">
   <img src="assets/painel-interativo.jpg" width="100%" alt="Captura real do painel web em execução: controles de classe e atributo e gráfico da duração dos fluxos versus contribuição SHAP para Malicious-DoH">
@@ -62,7 +64,7 @@ Para abrir a versão web localmente, execute na raiz do repositório:
 python3 -m http.server 8080 --directory painel
 ```
 
-Depois acesse http://127.0.0.1:8080. As [instruções de publicação](painel/README.md#publicar-no-novo-repositório) explicam como disponibilizá-la no novo repositório público. O [painel Python completo](project/scripts/painel_xai.py) também pode ser executado com os dados preparados, seguindo o [guia técnico](project/README.md#painel-interativo).
+Depois acesse http://127.0.0.1:8080. As [instruções do painel](painel/README.md) explicam como atualizar os dados e a publicação. O [painel Python completo](project/scripts/painel_xai.py) também pode ser executado com os dados preparados, seguindo o [guia técnico](project/README.md#painel-interativo).
 
 ## Resultados
 
