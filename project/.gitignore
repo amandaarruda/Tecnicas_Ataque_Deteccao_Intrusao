@@ -1,0 +1,42 @@
+# Dados: só scripts de download e hashes vão para o Git
+*.pcap
+*.pcapng
+
+# Modelos e explainers serializados
+*.pkl
+*.joblib
+
+# Ambiente e caches
+.venv/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.ruff_cache/
+.pytest_cache/
+
+# Sistema e editor
+.DS_Store
+.vscode/
+.idea/
+
+# Credenciais e configuração local
+.env
+.claude/settings.local.json
+
+# LaTeX
+report/*.aux
+report/*.log
+report/*.out
+report/*.bbl
+report/*.blg
+report/*.synctex.gz
+
+# Dados processados
+*.parquet
+
+# Dados brutos e processados
+data/raw/
+data/processed/
+
+# Sobra da extração de zip no macOS
+__MACOSX/

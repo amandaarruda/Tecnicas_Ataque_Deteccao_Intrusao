@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Explore as explicações SHAP do detector de tráfego DNS sobre HTTPS reproduzido no projeto CIN0114.">
+  <title>Painel de explicabilidade · IDS para DoH</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="vendor/plotly.min.js" defer></script>
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <header class="masthead">
+    <div class="header-inner">
+      <p class="eyebrow">CIN0114 · CIn / UFPE</p>
+      <h1>Por que o detector tomou essa decisão?</h1>
+      <p>Explore a importância dos atributos e as explicações de fluxos DNS sobre HTTPS.</p>
+    </div>
+  </header>
+  <main>
+    <div id="loading" role="status">Carregando as explicações dos fluxos…</div>
+    <div id="error" role="alert" hidden></div>
+    <div id="dashboard" hidden>
+      <section class="context" aria-label="Sobre os dados">
+        <div><strong>CIRA-CIC-DoHBrw-2020</strong><span id="sample-description"></span></div>
+        <p>As explicações se referem ao <strong>Random Forest base 1</strong>, com profundidade variável, e não à saída final do empilhamento.</p>
+      </section>
+      <nav class="tabs" role="tablist" aria-label="Tipo de explicação">
+        <button id="tab-importance" role="tab" aria-selected="true" aria-controls="panel-importance">Importância dos atributos</button>
+        <button id="tab-dependence" role="tab" aria-selected="false" aria-controls="panel-dependence" tabindex="-1">Relação com a decisão</button>
+        <button id="tab-local" role="tab" aria-selected="false" aria-controls="panel-local" tabindex="-1">Explicação de um fluxo</button>
+      </nav>
+      <div class="controls">
+        <label>Classe que queremos explicar<select id="class-select"></select></label>
+        <label id="limit-control">Atributos no gráfico<select id="limit-select"><option value="10">10 mais importantes</option><option value="20">20 mais importantes</option><option value="29">Todos os 29 atributos</option></select></label>
+        <label id="feature-control" hidden>Atributo<select id="feature-select"></select></label>
+        <label id="filter-control" hidden>Classe real dos fluxos<select id="filter-select"><option value="all">Todas as classes</option></select></label>
+        <label id="flow-control" hidden>Fluxo do teste<select id="flow-select"></select></label>
+      </div>
+      <section id="panel-importance" role="tabpanel" aria-labelledby="tab-importance">
+        <div class="section-heading"><div><h2>O que mais pesa na classificação?</h2><p>Média do valor absoluto de SHAP na amostra do teste. Barras maiores indicam maior contribuição média.</p></div></div>
+        <div class="chart-scroll"><div id="importance-chart" class="chart" aria-label="Gráfico de importância global dos atributos"></div></div>
+        <p class="reading-note">A importância mostra como o modelo usa um atributo. Ela não demonstra que o atributo causa o ataque.</p>
+      </section>
+      <section id="panel-dependence" role="tabpanel" aria-labelledby="tab-dependence" hidden>
+        <div class="section-heading"><div><h2>Como o valor do atributo afeta a decisão?</h2><p>Cada ponto é um fluxo. SHAP positivo aumenta a probabilidade da classe selecionada; negativo a reduz.</p></div></div>
+        <div class="chart-scroll"><div id="dependence-chart" class="chart" aria-label="Dispersão entre o valor do atributo e sua contribuição SHAP"></div></div>
+        <p class="reading-note">Os atributos são exibidos nas unidades originais. O modelo recebe os valores normalizados.</p>
+      </section>
+      <section id="panel-local" role="tabpanel" aria-labelledby="tab-local" hidden>
+        <div class="section-heading"><div><h2>Uma decisão, atributo por atributo</h2><p>Da probabilidade de referência até a probabilidade calculada para este fluxo.</p></div><button id="download" class="secondary">Baixar explicação CSV</button></div>
+        <dl class="flow-summary"><div><dt>Classe real</dt><dd id="actual-class"></dd></div><div><dt>Predição do Random Forest</dt><dd id="predicted-class"></dd></div><div><dt id="probability-label">Probabilidade</dt><dd id="probability"></dd></div></dl>
+        <div class="chart-scroll"><div id="local-chart" class="chart" aria-label="Contribuições dos atributos para a decisão de um fluxo"></div></div>
+        <p class="reading-note"><span class="positive">Laranja aumenta</span> e <span class="negative">azul reduz</span> a probabilidade da classe selecionada. Os atributos restantes são somados em “Outros”.</p>
+        <details><summary>Ver os valores e as contribuições dos 29 atributos</summary><div class="table-scroll"><table><thead><tr><th>Atributo</th><th>Valor original</th><th>SHAP (pp)</th></tr></thead><tbody id="feature-table"></tbody></table></div></details>
+      </section>
+      <footer>
+        <p>Explicações pré-calculadas de uma amostra estratificada do teste · seed 42 · três classes.</p>
+        <p>Non-DoH: HTTPS sem DoH. Benign-DoH: DoH legítimo. Malicious-DoH: tráfego de túnel.</p>
+        <p>Reprodução de Zebin, Rezvy e Luo (IEEE TIFS, 2022). <a href="https://doi.org/10.1109/TIFS.2022.3183390">Artigo de referência</a></p>
+      </footer>
+    </div>
+    <noscript>Ative o JavaScript para explorar os gráficos e as explicações.</noscript>
+  </main>
+</body>
+</html>

@@ -1,0 +1,179 @@
+{
+  "classes": [
+    "Non-DoH",
+    "Benign-DoH",
+    "Malicious-DoH"
+  ],
+  "clean_rows": [
+    889809,
+    19746,
+    254811
+  ],
+  "clean_rows_by_origin": {
+    "CIRA": [
+      889809,
+      19746,
+      249553
+    ],
+    "HKD": [
+      0,
+      0,
+      5258
+    ]
+  },
+  "clean_rows_by_tool": {
+    "dns2tcp": 167287,
+    "dnscat2": 35742,
+    "dnstt": 2304,
+    "iodine": 46524,
+    "tcp-over-dns": 1502,
+    "tuns": 1452
+  },
+  "hkd_test_proximity": {
+    "by_tool": {
+      "dnstt": {
+        "median_nearest_cira_malicious_train": 0.06104685236383506,
+        "median_nearest_hkd_train": 0.003372843283857042,
+        "n": 232
+      },
+      "tcp-over-dns": {
+        "median_nearest_cira_malicious_train": 0.07066865011922856,
+        "median_nearest_hkd_train": 0.007081101198424431,
+        "n": 142
+      },
+      "tuns": {
+        "median_nearest_cira_malicious_train": 0.02181243535143664,
+        "median_nearest_hkd_train": 5.584607758734165e-05,
+        "n": 139
+      }
+    },
+    "cira_malicious_train_rows": 224585,
+    "fraction_closer_to_hkd_train": 0.9844054580896686,
+    "hkd_test_rows": 513,
+    "hkd_train_rows": 4745,
+    "nearest_cira_malicious_train": {
+      "max": 0.19738790641730414,
+      "median": 0.05144939718505064,
+      "min": 0.017215968977289248,
+      "q1": 0.02558410431377623,
+      "q3": 0.07008202797033845
+    },
+    "nearest_hkd_train": {
+      "max": 0.214349057021693,
+      "median": 0.002570740737030179,
+      "min": 8.354356132671073e-06,
+      "q1": 0.000978298725839134,
+      "q3": 0.006484687967936002
+    },
+    "rows_closer_to_hkd_train": 505,
+    "seed": 42,
+    "test_size": 0.1
+  },
+  "infinite_values": 0,
+  "nan_by_column": {
+    "ResponseTimeTimeMedian": 8028,
+    "ResponseTimeTimeSkewFromMedian": 8028
+  },
+  "parquet_columns": [
+    "Duration",
+    "FlowBytesSent",
+    "FlowSentRate",
+    "FlowBytesReceived",
+    "FlowReceivedRate",
+    "PacketLengthVariance",
+    "PacketLengthStandardDeviation",
+    "PacketLengthMean",
+    "PacketLengthMedian",
+    "PacketLengthMode",
+    "PacketLengthSkewFromMedian",
+    "PacketLengthSkewFromMode",
+    "PacketLengthCoefficientofVariation",
+    "PacketTimeVariance",
+    "PacketTimeStandardDeviation",
+    "PacketTimeMean",
+    "PacketTimeMedian",
+    "PacketTimeMode",
+    "PacketTimeSkewFromMedian",
+    "PacketTimeSkewFromMode",
+    "PacketTimeCoefficientofVariation",
+    "ResponseTimeTimeVariance",
+    "ResponseTimeTimeStandardDeviation",
+    "ResponseTimeTimeMean",
+    "ResponseTimeTimeMedian",
+    "ResponseTimeTimeMode",
+    "ResponseTimeTimeSkewFromMedian",
+    "ResponseTimeTimeSkewFromMode",
+    "ResponseTimeTimeCoefficientofVariation",
+    "label",
+    "origin",
+    "tool"
+  ],
+  "parquet_sha256": "624c21216525d5b54075b9442e55b7b3f75aaead8ba4b6f0578c08132648890e",
+  "raw_rows": [
+    897493,
+    19807,
+    255094
+  ],
+  "raw_rows_by_origin": {
+    "CIRA": [
+      897493,
+      19807,
+      249836
+    ],
+    "HKD": [
+      0,
+      0,
+      5258
+    ]
+  },
+  "raw_rows_by_tool": {
+    "dns2tcp": 167486,
+    "dnscat2": 35770,
+    "dnstt": 2304,
+    "iodine": 46580,
+    "tcp-over-dns": 1502,
+    "tuns": 1452
+  },
+  "readme_class_rows": [
+    897493,
+    19807,
+    354996
+  ],
+  "readme_tool_rows": {
+    "dns2tcp": 167486,
+    "dnscat2": 35770,
+    "dnstt": 46080,
+    "iodine": 46580,
+    "tcp-over-dns": 30040,
+    "tuns": 29040
+  },
+  "removed_rows": [
+    7684,
+    61,
+    283
+  ],
+  "replicas_removed": 99902,
+  "source_files": {
+    "combinado/l1-total-add.csv": {
+      "bom": false,
+      "columns": 35,
+      "missing": [],
+      "same_order": true,
+      "unexpected": []
+    },
+    "combinado/l2-total-add.csv": {
+      "bom": false,
+      "columns": 35,
+      "missing": [],
+      "same_order": true,
+      "unexpected": []
+    },
+    "combinado/l3-total-add.csv": {
+      "bom": true,
+      "columns": 35,
+      "missing": [],
+      "same_order": true,
+      "unexpected": []
+    }
+  }
+}

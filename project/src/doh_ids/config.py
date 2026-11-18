@@ -1,0 +1,797 @@
+"""Constantes do projeto: classes, colunas, hiperparâmetros, seeds e caminhos.
+
+Todo experimento lê os valores daqui. Cada hiperparâmetro traz a seção do
+artigo de onde vem; onde o artigo é omisso, o comentário diz a leitura adotada.
+"""
+
+from pathlib import Path
+
+# Codificação das classes, na ordem usada pelo script dos autores.
+# A posição na lista é o código inteiro da classe.
+CLASS_NAMES = ["Non-DoH", "Benign-DoH", "Malicious-DoH"]
+
+# Nos CSVs do CIRA-CIC-DoHBrw-2020 o rótulo vem em texto, na coluna Label.
+LABEL_COLUMN = "Label"
+LABEL_ENCODING = {"NonDoH": 0, "Benign": 1, "Malicious": 2}
+
+# Identificadores do fluxo. Nunca entram no modelo: o extrator rotula o tráfego
+# DoH pelo endereço IP, e as classes foram capturadas em máquinas e datas
+# diferentes, de modo que essas colunas entregam o rótulo sem descrever o tráfego.
+ID_COLUMNS = ["SourceIP", "DestinationIP", "SourcePort", "DestinationPort", "TimeStamp"]
+
+# Os 29 atributos do modelo. O artigo fala em 29 atributos (Algoritmo 1 e
+# Seção VI-C) mas não os lista: adotamos as 29 estatísticas numéricas do fluxo,
+# com os nomes e na ordem do cabeçalho dos CSVs. O prefixo duplicado em
+# ResponseTimeTime vem do extrator.
+FEATURE_COLUMNS = [
+    "Duration",
+    "FlowBytesSent",
+    "FlowSentRate",
+    "FlowBytesReceived",
+    "FlowReceivedRate",
+    "PacketLengthVariance",
+    "PacketLengthStandardDeviation",
+    "PacketLengthMean",
+    "PacketLengthMedian",
+    "PacketLengthMode",
+    "PacketLengthSkewFromMedian",
+    "PacketLengthSkewFromMode",
+    "PacketLengthCoefficientofVariation",
+    "PacketTimeVariance",
+    "PacketTimeStandardDeviation",
+    "PacketTimeMean",
+    "PacketTimeMedian",
+    "PacketTimeMode",
+    "PacketTimeSkewFromMedian",
+    "PacketTimeSkewFromMode",
+    "PacketTimeCoefficientofVariation",
+    "ResponseTimeTimeVariance",
+    "ResponseTimeTimeStandardDeviation",
+    "ResponseTimeTimeMean",
+    "ResponseTimeTimeMedian",
+    "ResponseTimeTimeMode",
+    "ResponseTimeTimeSkewFromMedian",
+    "ResponseTimeTimeSkewFromMode",
+    "ResponseTimeTimeCoefficientofVariation",
+]
+
+# As duas únicas colunas com valor ausente nos CSVs, sempre nas mesmas linhas:
+# fluxos sem nenhum par requisição-resposta, em que o extrator não calcula a mediana.
+NAN_COLUMNS = ["ResponseTimeTimeMedian", "ResponseTimeTimeSkewFromMedian"]
+
+# As seis colunas de assimetria. Nelas o extrator DoHLyzer grava -10 quando o
+# desvio padrão é zero (métodos get_skew e get_skew2 de packet_length.py e
+# response_time.py): o valor marca o fluxo, não mede assimetria.
+SKEW_COLUMNS = [column for column in FEATURE_COLUMNS if "Skew" in column]
+SKEW_SENTINEL = -10
+
+# Fluxos por classe na Tabela I do artigo, na ordem de CLASS_NAMES.
+TABLE_I_COUNTS = [889809, 19746, 249553]
+
+# Alvos do artigo.
+
+# Matrizes de confusão da Fig. 4 do artigo: (a) treino, em validação cruzada de
+# 10 folds; (b) teste. Linha é a classe real e coluna a classe predita, as duas
+# na ordem de CLASS_NAMES. A figura desenha as classes em outra ordem (Benign-DoH,
+# Malicious-DoH, Non-DoH): as contagens foram reordenadas para a codificação do
+# projeto, porque comparar matrizes em ordens diferentes dá distância errada
+# sem erro aparente.
+FIG4A_CONFUSION = [
+    [800316, 503, 10],
+    [1816, 15946, 9],
+    [93, 9, 224496],
+]
+FIG4B_CONFUSION = [
+    [88928, 50, 2],
+    [192, 1782, 1],
+    [6, 0, 24949],
+]
+
+# Amostras por classe no treino e no teste do artigo, na ordem de CLASS_NAMES:
+# soma de cada linha das matrizes da Fig. 4a e da Fig. 4b.
+FIG4_TRAIN_COUNTS = [sum(row) for row in FIG4A_CONFUSION]
+FIG4_TEST_COUNTS = [sum(row) for row in FIG4B_CONFUSION]
+
+# Painéis da Fig. 2 do artigo: atributo, unidade, início e fim do eixo
+# horizontal e se o eixo é logarítmico. As faixas foram lidas nos eixos da
+# figura; o artigo não diz como recortou os dados. A unidade vem do extrator
+# DoHLyzer, que mede o comprimento do pacote em bytes.
+FIG2_PANELS = [
+    ("FlowBytesReceived", "bytes", 0, 17500, False),
+    ("PacketLengthMean", "bytes", 0, 800, False),
+    ("PacketLengthVariance", "bytes²", 10, 1_000_000, True),
+]
+# Pontos do eixo horizontal em que cada curva da Fig. 2 é calculada.
+FIG2_GRID_POINTS = 400
+
+# Tabela II do artigo, metade superior: os três modelos de comparação e o modelo
+# proposto, avaliados no teste. O artigo não diz que média (macro, ponderada ou
+# micro) usa em F1, precisão e recall, nem como calcula a AUC com três classes.
+TABLE_II = {
+    "decision_tree": {
+        "auc": 0.8617,
+        "accuracy": 0.9770,
+        "f1": 0.8197,
+        "precision": 0.9658,
+        "recall": 0.7120,
+    },
+    "xgboost": {
+        "auc": 0.9986,
+        "accuracy": 0.9927,
+        "f1": 0.9843,
+        "precision": 0.9956,
+        "recall": 0.9732,
+    },
+    "random_forest": {
+        "auc": 0.9999,
+        "accuracy": 0.9998,
+        "f1": 0.9987,
+        "precision": 0.9989,
+        "recall": 0.9985,
+    },
+    "balanced_stacked_rf": {
+        "auc": 0.9999,
+        "accuracy": 0.9998,
+        "f1": 0.9991,
+        "precision": 0.9991,
+        "recall": 0.9992,
+    },
+}
+
+# Tabela II do artigo, metade inferior ("Comparison with literature"): resultados
+# de outros trabalhos sobre o mesmo dataset, que o artigo copia das referências
+# [10] (Banadaki), [12] (Jafar et al.) e [22] (Ahakonye et al.) da sua lista.
+# Os valores estão como impressos na tabela, na ordem das linhas. `None` marca a
+# célula que o artigo imprime como "–". As sete primeiras linhas estão impressas
+# como fração, entre 0 e 1; a última, Random Forest [22], está impressa em
+# percentual (99.5, 99.4 e 99.6), e `percent` diz a escala de cada linha. O
+# artigo declara que o método experimental desses trabalhos não é diretamente
+# comparável ao dele (Seção V).
+TABLE_II_LITERATURE = [
+    {
+        "model": "Decision Tree",
+        "reference": "[10]",
+        "auc": 0.998,
+        "accuracy": 0.998,
+        "f1": 0.998,
+        "precision": 0.998,
+        "recall": 0.999,
+        "percent": False,
+    },
+    {
+        "model": "Gradient Boosting(XGB)",
+        "reference": "[10]",
+        "auc": 1,
+        "accuracy": 0.999,
+        "f1": 1,
+        "precision": 1,
+        "recall": 1,
+        "percent": False,
+    },
+    {
+        "model": "Random Forest",
+        "reference": "[10]",
+        "auc": 1,
+        "accuracy": 0.998,
+        "f1": 0.997,
+        "precision": 0.999,
+        "recall": 0.998,
+        "percent": False,
+    },
+    {
+        "model": "Decision Tree",
+        "reference": "[12]",
+        "auc": None,
+        "accuracy": 0.999715,
+        "f1": None,
+        "precision": None,
+        "recall": None,
+        "percent": False,
+    },
+    {
+        "model": "Random Forest",
+        "reference": "[12]",
+        "auc": None,
+        "accuracy": 0.999802,
+        "f1": None,
+        "precision": None,
+        "recall": None,
+        "percent": False,
+    },
+    {
+        "model": "Decision Tree",
+        "reference": "[22]",
+        "auc": None,
+        "accuracy": 0.993,
+        "f1": None,
+        "precision": 0.992,
+        "recall": 0.993,
+        "percent": False,
+    },
+    {
+        "model": "Gradient Boosting(XGB)",
+        "reference": "[22]",
+        "auc": None,
+        "accuracy": 0.951,
+        "f1": None,
+        "precision": 0.957,
+        "recall": 0.951,
+        "percent": False,
+    },
+    {
+        "model": "Random Forest",
+        "reference": "[22]",
+        "auc": None,
+        "accuracy": 99.5,
+        "f1": None,
+        "precision": 99.4,
+        "recall": 99.6,
+        "percent": True,
+    },
+]
+
+# Avaliação.
+
+# Nível do intervalo de confiança da taxa de falsos positivos. O artigo não
+# reporta intervalo: 95% é escolha nossa.
+CONFIDENCE_LEVEL = 0.95
+
+# Tamanho do tráfego em que os alarmes falsos da conta de taxa base são contados.
+BASE_RATE_FLOWS = 10_000_000
+
+# Diferença, em pontos percentuais, a partir da qual um modelo de comparação é
+# destacado como muito acima da sua linha na Tabela II. Escolha nossa: 5 pontos
+# estão longe do que a seed ou a versão de uma biblioteca muda em um modelo
+# com os mesmos hiperparâmetros.
+TABLE_II_FAR_ABOVE_PP = 5.0
+
+# Membros de Total_CSVs.zip que formam as três classes, na ordem de CLASS_NAMES.
+# O quarto membro, l1-doh.csv, é a união dos dois l2: lê-lo contaria o DoH em dobro.
+CIRA_ZIP_MEMBERS = ["l1-nondoh.csv", "l2-benign.csv", "l2-malicious.csv"]
+
+# Rede das máquinas que geraram o tráfego do CIRA-CIC-DoHBrw-2020. O endereço
+# dessa rede que aparece no fluxo identifica a máquina local.
+CIRA_LOCAL_PREFIX = "192.168.20."
+
+# Segundo dataset: DoH-Tunnel-Traffic-HKD e o combinado CIRA + HKD.
+
+# Os CSVs do HKD e parte dos do combinado começam com a marca de ordem de bytes
+# (BOM). Lida como UTF-8 comum, a marca fica colada ao nome da primeira coluna;
+# esta codificação a descarta e lê do mesmo jeito o arquivo que não a tem.
+SECOND_DATASET_ENCODING = "utf-8-sig"
+
+# Conjunto de origem de cada fluxo do segundo dataset.
+ORIGINS = ["CIRA", "HKD"]
+
+# Ferramenta de túnel que gerou o fluxo malicioso e o conjunto de onde ela vem.
+# No combinado, o arquivo de nível 3 traz a ferramenta na coluna Label, e ela
+# basta para dizer a origem: as três primeiras são do CIRA-CIC-DoHBrw-2020 e as
+# três últimas, do DoH-Tunnel-Traffic-HKD.
+TOOL_ORIGIN = {
+    "dns2tcp": "CIRA",
+    "dnscat2": "CIRA",
+    "iodine": "CIRA",
+    "dnstt": "HKD",
+    "tcp-over-dns": "HKD",
+    "tuns": "HKD",
+}
+
+# Rótulos em texto, nos arquivos de nível 1 e 2 do combinado, das duas classes
+# sem ferramenta de túnel. Os outros rótulos desses arquivos, DoH e Malicious,
+# não são lidos: os fluxos maliciosos vêm todos do arquivo de nível 3.
+COMBINED_NON_DOH_LABEL = "NonDoH"
+COMBINED_BENIGN_LABEL = "Benign"
+
+# Colunas das tabelas do segundo dataset: os atributos, o rótulo, o conjunto de
+# origem e a ferramenta de túnel, que fica vazia fora da classe maliciosa.
+SECOND_DATASET_COLUMNS = FEATURE_COLUMNS + ["label", "origin", "tool"]
+
+# Vezes que cada fluxo do HKD aparece em Total-48h-Augmentation.csv e no
+# combinado. O README do HKD descreve o arquivo como "augmented assuming 20
+# client PCs"; a contagem é conferida nos dados pelo script que os prepara.
+HKD_REPLICAS = 20
+
+# Maior diferença aceita, em um atributo, entre um fluxo de Total-48h.csv e a
+# cópia dele nos arquivos replicados, que gravam os números arredondados.
+HKD_ROUNDING_TOLERANCE = 1e-7
+
+# Fluxos por classe do combinado, na ordem de CLASS_NAMES, e por ferramenta,
+# como o README.txt do dataset combinado os informa.
+README_CLASS_ROWS = [897493, 19807, 354996]
+README_TOOL_ROWS = {
+    "dns2tcp": 167486,
+    "dnscat2": 35770,
+    "iodine": 46580,
+    "dnstt": 46080,
+    "tcp-over-dns": 30040,
+    "tuns": 29040,
+}
+
+# Comparação de um atributo entre o CIRA e o HKD: quantos dos valores mais
+# frequentes de cada classe e origem são gravados.
+TOP_VALUES_SHOWN = 5
+
+# Regra de um só atributo, usada para medir quanto um atributo sozinho separa
+# o tráfego malicioso do CIRA: ficam na regra os valores que cobrem ao menos 1%
+# dos fluxos Malicious-DoH do CIRA e no máximo 0,01% dos fluxos legítimos
+# (Non-DoH e Benign-DoH). Os dois limites são escolha nossa, para a regra não
+# depender de valor que aparece em poucos fluxos.
+RULE_MIN_MALICIOUS_FRACTION = 0.01
+RULE_MAX_LEGITIMATE_FRACTION = 0.0001
+
+# Recall de uma ferramenta de túnel abaixo do qual ele é descrito como perto
+# de zero. Escolha nossa: 1%.
+NEAR_ZERO_RECALL = 0.01
+
+# Identificação da ferramenta de túnel (Seção VI-D e Fig. 9 do artigo).
+
+# Ferramentas de túnel do CIRA-CIC-DoHBrw-2020. Em MaliciousDoH-CSVs.zip cada
+# uma tem uma pasta com um arquivo all.csv, e a ferramenta é o nome da pasta.
+CIRA_TOOLS = [tool for tool, origin in TOOL_ORIGIN.items() if origin == "CIRA"]
+MALICIOUS_ZIP_MEMBER = "CSVs/{tool}/all.csv"
+
+# Nesses arquivos não há coluna Label: a coluna DoH, booleana, diz se o fluxo é
+# DoH. As poucas linhas em que ela é falsa não são tráfego de túnel.
+DOH_COLUMN = "DoH"
+
+# Valores da Seção VI-D do artigo, por ferramenta. O artigo os chama de
+# "accuracy" e não diz como foram calculados, nem com que modelo ou split.
+SECTION_VI_D_ACCURACY = {"dns2tcp": 0.992, "iodine": 0.929, "dnscat2": 0.913}
+
+# Painéis da Fig. 9 do artigo: atributo, unidade e início e fim do eixo
+# horizontal, lidos na figura. A unidade vem do extrator DoHLyzer, que mede o
+# tempo dos pacotes em segundos; a assimetria não tem unidade.
+FIG9_PANELS = [
+    ("ResponseTimeTimeSkewFromMode", "sem unidade", -10, 10),
+    ("PacketTimeVariance", "s²", 0, 3000),
+]
+
+# Média e desvio padrão de cada ferramenta em cada painel, como a legenda da
+# Fig. 9 do artigo os imprime.
+FIG9_MEAN_STD = {
+    "ResponseTimeTimeSkewFromMode": {
+        "dns2tcp": (1.09728, 0.607949),
+        "dnscat2": (0.504178, 1.13836),
+        "iodine": (0.520797, 1.08367),
+    },
+    "PacketTimeVariance": {
+        "dns2tcp": (197.345, 290.832),
+        "dnscat2": (854.902, 434.215),
+        "iodine": (879.466, 430.179),
+    },
+}
+
+# Intervalos do eixo horizontal em que as curvas da Fig. 9 são calculadas.
+# Escolha nossa: o artigo não informa.
+FIG9_BINS = 100
+
+# Hiperparâmetros da trilha fiel.
+
+# 10% dos fluxos para teste, Seção III-B do artigo.
+TEST_SIZE = 0.10
+
+# Três subconjuntos balanceados de treino, um por Random Forest, Seção III-B.
+N_SUBSETS = 3
+
+# Razão Non-DoH : Benign-DoH : Malicious-DoH de cada subconjunto, como a Seção
+# III-B do artigo a declara. A razão obtida é reportada ao lado desta.
+ARTICLE_SUBSET_RATIO = [15, 12, 12]
+
+# Validação cruzada de 10 folds sobre o treino (Seção III-B e legenda da
+# Fig. 4a do artigo). O artigo não tem conjunto de validação separado e não diz
+# se os folds são estratificados nem se as linhas são embaralhadas. Leitura
+# adotada: folds estratificados, para a classe benigna, a menor, ter a mesma
+# proporção em todos; com embaralhamento e seed, para os folds dependerem só
+# da seed e não da ordem das linhas da tabela.
+CV_FOLDS = 10
+CV_SHUFFLE = True
+
+# 10 árvores por Random Forest, Seção IV-A do artigo.
+N_ESTIMATORS = 10
+
+# A Seção IV-A do artigo diz que os atributos de cada divisão são "selected at
+# random from 28 features". A frase admite duas leituras: 28 atributos
+# candidatos em cada divisão, de 29 disponíveis, ou um modelo com 28 atributos
+# no total. Adotamos a primeira, porque o Algoritmo 1 e a Seção VI-C falam em
+# 29 atributos de entrada e o artigo não diz qual seria o atributo retirado.
+MAX_FEATURES = 28
+
+# O artigo traz duas passagens sobre a profundidade das árvores. A Seção IV-B
+# declara profundidade máxima 5 nos submodelos; a linha 3 do Algoritmo 1 fala
+# em "variable tree depth". A trilha fiel usa 5, o único valor numérico que o
+# texto fornece. A leitura sem limite de profundidade, com todo o resto
+# igual, é reportada como variante nomeada, porque também tem apoio no texto.
+# As duas são medidas no mesmo protocolo e nenhuma foi escolhida pelo resultado.
+MAX_DEPTH = 5
+MAX_DEPTH_VARIABLE = None
+
+# Modelos de comparação da Tabela II do artigo: a árvore de decisão tem
+# profundidade máxima 10 ("Tree Depth=10") e o Random Forest tem 10 árvores
+# ("number of Trees=10"). São os únicos hiperparâmetros que a tabela informa;
+# o XGBoost não tem nenhum.
+TABLE_II_TREE_DEPTH = 10
+TABLE_II_FOREST_TREES = 10
+
+# Núcleos usados no treino: -1 pede todos os da máquina. Não altera o
+# resultado, porque cada árvore recebe a própria seed; muda só o tempo.
+N_JOBS = -1
+
+# Explicabilidade (Seção VI do artigo).
+
+# O artigo não diz quantos fluxos entram no cálculo dos valores SHAP: a Fig. 5
+# fala em "training data" e a Fig. 6 em "all the observations of the test set".
+# Usamos uma amostra de até 2.000 fluxos por classe, uma do treino e uma do
+# teste: escolha nossa, para o cálculo sobre árvores sem limite de profundidade
+# caber em minutos. A amostra tem as três classes em partes iguais, e a
+# importância média pesa cada classe por igual, não na proporção do tráfego.
+SHAP_SAMPLE_PER_CLASS = 2000
+
+# Atributos do topo de cada ranking comparados entre os três submodelos.
+SHAP_TOP_FEATURES = 10
+
+# O artigo não diz qual modelo o TreeExplainer explica (linha 8 do Algoritmo
+# 1), e o SHAP não aceita o modelo empilhado. As figuras e o painel explicam o
+# Random Forest do primeiro subconjunto; a tabela de importância traz os três.
+EXPLAINED_BASE = 0
+
+# Limiar de duração, em segundos, que a legenda da Fig. 6 do artigo atribui ao
+# modelo para o tráfego malicioso.
+ARTICLE_DURATION_THRESHOLD_SECONDS = 40
+
+# Tolerância da conferência de que o valor base mais a soma dos valores SHAP
+# reproduz a probabilidade do modelo.
+ADDITIVITY_TOLERANCE = 1e-6
+
+# Ordem dos 29 atributos na Fig. 5 do artigo, do mais para o menos importante,
+# lida dos rótulos do eixo vertical da figura.
+FIG5_RANKING = [
+    "Duration",
+    "PacketLengthMode",
+    "PacketTimeVariance",
+    "PacketLengthCoefficientofVariation",
+    "PacketLengthVariance",
+    "PacketLengthMean",
+    "FlowBytesSent",
+    "PacketTimeMean",
+    "ResponseTimeTimeMedian",
+    "FlowBytesReceived",
+    "PacketLengthStandardDeviation",
+    "PacketLengthMedian",
+    "PacketTimeMedian",
+    "PacketLengthSkewFromMode",
+    "PacketTimeCoefficientofVariation",
+    "PacketLengthSkewFromMedian",
+    "PacketTimeSkewFromMode",
+    "FlowReceivedRate",
+    "PacketTimeSkewFromMedian",
+    "PacketTimeStandardDeviation",
+    "PacketTimeMode",
+    "FlowSentRate",
+    "ResponseTimeTimeCoefficientofVariation",
+    "ResponseTimeTimeVariance",
+    "ResponseTimeTimeSkewFromMedian",
+    "ResponseTimeTimeMean",
+    "ResponseTimeTimeMode",
+    "ResponseTimeTimeSkewFromMode",
+    "ResponseTimeTimeStandardDeviation",
+]
+
+# Figs. 7 e 8 do artigo, lidas das telas do painel: a classe explicada, a
+# probabilidade predita, a média da população e o atributo de maior
+# contribuição, com o valor dele no fluxo e o efeito. Probabilidade, média e
+# efeito em pontos percentuais. A legenda da Fig. 8 fala em 86,1% de confiança; a
+# tela mostra 88,85%, que é o valor registrado aqui.
+FIG7_MALICIOUS = {
+    "class_name": "Malicious-DoH",
+    "prediction": 76.4,
+    "population_average": 33.31,
+    "top_feature": "Duration",
+    "top_value": 120.817079,
+    "top_effect": 14.68,
+}
+FIG8_NON_DOH = {
+    "class_name": "Non-DoH",
+    "prediction": 88.85,
+    "population_average": 33.33,
+    "top_feature": "PacketLengthVariance",
+    "top_value": 468846.35165895056,
+    "top_effect": 19.15,
+}
+
+# A tabela de contribuição das Figs. 7 e 8 do artigo lista dez atributos e
+# soma os demais em "Other features combined".
+LOCAL_TABLE_FEATURES = 10
+
+# Endereço do painel interativo: só a própria máquina, na porta padrão da
+# biblioteca explainerdashboard.
+DASHBOARD_HOST = "127.0.0.1"
+DASHBOARD_PORT = 8050
+
+# Fluxos por classe na amostra do teste que o painel explica. A versão 0.5.8 do
+# explainerdashboard só monta o painel sem um módulo que as versões atuais do
+# setuptools não trazem (pkg_resources) quando há no máximo 1.000 linhas: 333
+# por classe é o maior valor igual nas três classes que cabe nesse limite. As
+# figuras estáticas usam a amostra maior, de SHAP_SAMPLE_PER_CLASS.
+DASHBOARD_SAMPLE_PER_CLASS = 333
+
+# Leitura adotada na trilha fiel em cada ponto que o artigo deixa em aberto.
+# O dicionário é gravado no registro de cada execução, para o resultado dizer
+# sozinho que sistema foi treinado.
+FIEL_READINGS = {
+    "base_estimators": "um Random Forest por subconjunto, treinado antes do empilhamento",
+    "meta_training_data": "predições dos bases no treino original normalizado, sem sintéticas",
+    "meta_input": "rótulo predito por cada base (use_probas=False), três entradas",
+    "meta_parameters": "regressão logística com os parâmetros padrão do scikit-learn",
+    "smote_target": "só Benign-DoH, aumentada até o tamanho de Malicious-DoH no subconjunto",
+    "smote_parameters": "padrão do imbalanced-learn",
+    "one_sided_selection": "não aplicada: o artigo a cita sem descrever",
+    "class_weight": "nenhum: o artigo não menciona",
+    "hyperparameter_source": "valores finais do artigo (Seções IV-A e IV-B), sem busca",
+    "cross_validation": "scaler, subconjuntos, SMOTE, bases e meta refeitos em cada fold",
+}
+
+# Seeds. O artigo não informa a seed. Na trilha fiel usamos 42, a que aparece
+# no script publicado pelos autores. Na trilha corrigida usamos dez seeds, de
+# 0 a 9, para reportar média e desvio padrão: escolha nossa, não do artigo.
+SEED_FIEL = 42
+SEEDS_CORRIGIDA = list(range(10))
+
+# Protocolo corrigido: os modelos comparados em dez seeds.
+
+# Configurações fixadas antes da primeira execução, sem busca de
+# hiperparâmetros: escolher a configuração olhando o teste de uma seed
+# contaminaria a comparação nas outras. `stacked` diz se o modelo é o empilhado
+# em três subconjuntos ou um Random Forest único, treinado no treino inteiro
+# balanceado com SMOTE. `max_features` "sqrt" e `max_depth` sem limite são os
+# padrões do scikit-learn.
+# - A é o sistema do artigo na leitura de profundidade variável.
+# - B tem os mesmos hiperparâmetros de A e não empilha. Os dois diferem na
+#   arquitetura e no balanceamento que ela traz: em A cada base vê um terço do
+#   Non-DoH e só Benign-DoH é aumentada; em B o SMOTE iguala Benign-DoH e
+#   Malicious-DoH ao Non-DoH inteiro. A diferença entre A e B mede as duas
+#   coisas juntas.
+# - C é o Random Forest da Tabela II, que só informa as 10 árvores: A contra C
+#   é a comparação que o artigo faz.
+# - A-prof5 e B-prof5 repetem A e B com a profundidade máxima 5 da Seção IV-B,
+#   e são reportados ao lado.
+CORRIGIDA_MODELS = {
+    "A": {
+        "stacked": True,
+        "n_estimators": N_ESTIMATORS,
+        "max_depth": MAX_DEPTH_VARIABLE,
+        "max_features": MAX_FEATURES,
+    },
+    "B": {
+        "stacked": False,
+        "n_estimators": N_ESTIMATORS,
+        "max_depth": MAX_DEPTH_VARIABLE,
+        "max_features": MAX_FEATURES,
+    },
+    "C": {
+        "stacked": False,
+        "n_estimators": TABLE_II_FOREST_TREES,
+        "max_depth": None,
+        "max_features": "sqrt",
+    },
+    "A-prof5": {
+        "stacked": True,
+        "n_estimators": N_ESTIMATORS,
+        "max_depth": MAX_DEPTH,
+        "max_features": MAX_FEATURES,
+    },
+    "B-prof5": {
+        "stacked": False,
+        "n_estimators": N_ESTIMATORS,
+        "max_depth": MAX_DEPTH,
+        "max_features": MAX_FEATURES,
+    },
+}
+
+# Pares comparados seed a seed e as métricas da comparação, fixados antes de
+# ver os números: F1 macro e recall de Benign-DoH, a classe menor. Em cada par
+# contam-se as seeds em que cada modelo vence e aplica-se o teste de postos
+# sinalizados de Wilcoxon. Os dez conjuntos de teste se sobrepõem, então os
+# pares não são independentes e o teste é só indicativo.
+PAIRED_COMPARISONS = [("A", "B"), ("A", "C"), ("A-prof5", "B-prof5")]
+PAIRED_METRICS = ["macro_f1", "benign_doh_recall"]
+
+# Frações de fluxos maliciosos no tráfego usadas na conta de taxa base. São
+# hipotéticas: o conjunto de dados não mede a prevalência real, e os três
+# valores só mostram como a precisão operacional cai quando o ataque é raro.
+HYPOTHETICAL_PREVALENCES = [1e-3, 1e-4, 1e-5]
+
+# Avaliação por máquina com o modelo A: número de dobras e seed dos sorteios do
+# modelo. Em cada dobra fica de fora uma das quatro máquinas que geraram
+# Non-DoH e Benign-DoH e cerca de um quarto das dez que geraram Malicious-DoH.
+# A divisão em dobras não tem sorteio; a seed só controla os subconjuntos, o
+# SMOTE e os modelos, e é a primeira da lista: escolha nossa, feita antes de rodar.
+GROUP_FOLDS = 4
+GROUP_FOLD_SEED = SEEDS_CORRIGIDA[0]
+
+# Configurações dos experimentos complementares: um Random Forest único, sem SMOTE e sem
+# empilhamento, com peso de classe (class_weight="balanced") no lugar das
+# amostras sintéticas. Tudo abaixo foi fixado antes da primeira execução.
+
+# Modelos com hiperparâmetros fixos, para medir o efeito de trocar o
+# empilhamento com SMOTE pelo Random Forest único com peso de classe sem mudar
+# mais nada: M1 tem os hiperparâmetros dos bases de A e é comparado com A;
+# M1-prof5 tem os de A-prof5 e é comparado com A-prof5.
+MODIFIED_MODELS = {
+    "M1": {
+        "n_estimators": N_ESTIMATORS,
+        "max_depth": MAX_DEPTH_VARIABLE,
+        "max_features": MAX_FEATURES,
+    },
+    "M1-prof5": {
+        "n_estimators": N_ESTIMATORS,
+        "max_depth": MAX_DEPTH,
+        "max_features": MAX_FEATURES,
+    },
+}
+
+# Nome do modelo proposto: o mesmo Random Forest único, com os hiperparâmetros
+# escolhidos em MODIFIED_GRID por validação cruzada dentro do treino de cada seed.
+MODIFIED_SELECTED_MODEL = "M1M2"
+
+# Grade da seleção: árvores, profundidade máxima e atributos por divisão. Com
+# "sqrt", o padrão do scikit-learn, cada divisão sorteia 5 dos 29 atributos, o
+# que devolve ao Random Forest a aleatorização que 28 de 29 quase anula
+# (Seção IV-A do artigo). As seis primeiras combinações cruzam 10 e 100
+# árvores com profundidade 5, 10 e sem limite; as duas últimas são as
+# configurações do artigo nas duas leituras de profundidade, para a seleção
+# poder ficar com elas. Os valores 100 e 10 são escolha nossa.
+MODIFIED_GRID = [
+    {"n_estimators": 10, "max_depth": 5, "max_features": "sqrt"},
+    {"n_estimators": 100, "max_depth": 5, "max_features": "sqrt"},
+    {"n_estimators": 10, "max_depth": 10, "max_features": "sqrt"},
+    {"n_estimators": 100, "max_depth": 10, "max_features": "sqrt"},
+    {"n_estimators": 10, "max_depth": None, "max_features": "sqrt"},
+    {"n_estimators": 100, "max_depth": None, "max_features": "sqrt"},
+    {"n_estimators": N_ESTIMATORS, "max_depth": MAX_DEPTH, "max_features": MAX_FEATURES},
+    {"n_estimators": N_ESTIMATORS, "max_depth": MAX_DEPTH_VARIABLE, "max_features": MAX_FEATURES},
+]
+
+# Validação cruzada da seleção: 5 folds estratificados e embaralhados com a
+# seed, dentro do treino. Escolha nossa; não é a validação de 10 folds da
+# Fig. 4a do artigo, que é CV_FOLDS. Vence a combinação de maior F1 macro
+# médio nos folds; no empate, a que vem antes na grade.
+MODIFIED_CV_FOLDS = 5
+
+# Fração do treino de cada seed, sorteada por classe, em que a seleção é
+# feita. Escolha nossa, pelo custo: no treino inteiro a seleção das dez seeds
+# nos dois conjuntos de dados levaria cerca de oito horas. O modelo final é
+# ajustado no treino inteiro. Limitação: a seleção vê um quarto dos fluxos de
+# Benign-DoH do treino.
+MODIFIED_SELECTION_FRACTION = 0.25
+
+# Modelos ajustados em cada conjunto de dados. No CIRA-CIC-DoHBrw-2020, A e
+# A-prof5 já foram medidos nas mesmas dez seeds pelo protocolo corrigido e são
+# lidos dos resultados dele. No combinado sem réplicas, A é ajustado aqui.
+MODIFIED_RUNS = {
+    "cira": ["M1", "M1-prof5", MODIFIED_SELECTED_MODEL],
+    "combinado_sem_replicas": ["A", MODIFIED_SELECTED_MODEL],
+}
+
+# Pares comparados seed a seed em cada conjunto de dados, a modificação
+# primeiro, e as métricas da comparação: recall de Benign-DoH, F1 macro e FPR
+# de Malicious-DoH contra o resto. O tempo de treino entra na mesma comparação
+# e é lido do registro de cada execução. Método e ressalva são os de
+# PAIRED_COMPARISONS.
+MODIFIED_COMPARISONS = {
+    "cira": [("M1", "A"), ("M1-prof5", "A-prof5"), (MODIFIED_SELECTED_MODEL, "A")],
+    "combinado_sem_replicas": [(MODIFIED_SELECTED_MODEL, "A")],
+}
+MODIFIED_PAIRED_METRICS = ["benign_doh_recall", "macro_f1", "malicious_fpr"]
+
+# Robustez à manipulação da duração do fluxo. O artigo publica que a duração
+# pesa na decisão (Seção VI-B e Fig. 6) e não avalia um atacante que a mude.
+# Tudo abaixo foi fixado antes da primeira execução.
+
+# Modelos avaliados: o sistema do artigo sem limite de profundidade, o modelo
+# proposto pela equipe e, ao lado, o sistema do artigo com profundidade 5.
+ROBUSTNESS_MODELS = ["A", MODIFIED_SELECTED_MODEL, "A-prof5"]
+
+# Conjuntos de colunas em que cada modelo é ajustado: todos os atributos, sem a
+# duração e sem a duração e as duas taxas de bytes por segundo, que o extrator
+# calcula dividindo os bytes pela duração. O valor é a lista de colunas retiradas.
+ROBUSTNESS_COLUMN_SETS = {
+    "todos": [],
+    "sem_duration": ["Duration"],
+    "sem_duration_taxas": ["Duration", "FlowSentRate", "FlowReceivedRate"],
+}
+
+# Colunas que a fragmentação de uma sessão em fluxos menores divide pelo fator:
+# a duração e os bytes enviados e recebidos. As taxas são o quociente das duas
+# e não mudam; as estatísticas por pacote ficam como estão, por simplificação.
+FRAGMENTED_COLUMNS = ["Duration", "FlowBytesSent", "FlowBytesReceived"]
+
+# Fatores de fragmentação: em quantos fluxos de mesma duração a sessão é
+# cortada. O fator 1 é o teste sem perturbação. Potências de 2 até 16 são
+# escolha nossa: com a mediana de 34 s dos fluxos maliciosos, o fator 16 leva a
+# duração a cerca de 2 s.
+FRAGMENTATION_FACTORS = [1, 2, 4, 8, 16]
+
+# Pares comparados seed a seed em cada fator, o primeiro menos o segundo, pelo
+# recall de Malicious-DoH: o modelo proposto contra o sistema do artigo, com
+# as mesmas colunas, e cada modelo sem colunas contra ele mesmo com todas.
+ROBUSTNESS_MODEL_PAIR = (MODIFIED_SELECTED_MODEL, "A")
+ROBUSTNESS_COLUMN_PAIRS = [("sem_duration", "todos"), ("sem_duration_taxas", "todos")]
+
+# Limiares da leitura descritiva da robustez. Foram acrescentados depois da
+# execução, com os resultados à vista: não fazem parte da regra de leitura
+# fixada antes dela e não mudam nenhum veredito. Escolha nossa. Com recall de
+# Malicious-DoH abaixo de 90% em um fator, a seed conta como colapso do modelo
+# nesse fator; com mais de 90% dos vetores perturbados incoerentes (tempo médio
+# de pacote maior que a duração), o fator é lido como fora da região de fluxos
+# possíveis.
+ROBUSTNESS_COLLAPSE_RECALL = 0.90
+ROBUSTNESS_INCOHERENT_FRACTION = 0.90
+
+# Tempo de inferência. O artigo limita as árvores a profundidade 5 para manter
+# o cálculo rápido na predição (Seção IV-B) e não mede esse tempo. Tudo abaixo
+# foi fixado antes da primeira execução.
+
+# Modelos medidos em cada conjunto de dados: só os que já têm execução gravada
+# nas mesmas seeds, para conferir que o modelo ajustado de novo é o mesmo.
+INFERENCE_MODELS = {
+    "cira": ["A", "A-prof5", "M1", MODIFIED_SELECTED_MODEL],
+    "combinado_sem_replicas": ["A", MODIFIED_SELECTED_MODEL],
+}
+
+# Pares comparados seed a seed, o primeiro contra o segundo. A-prof5 contra A
+# confere a justificativa do artigo para a profundidade 5.
+INFERENCE_COMPARISONS = {
+    "cira": [(MODIFIED_SELECTED_MODEL, "A"), ("M1", "A"), ("A-prof5", "A")],
+    "combinado_sem_replicas": [(MODIFIED_SELECTED_MODEL, "A")],
+}
+
+# Repetições da predição do teste inteiro, depois de uma de aquecimento, e
+# fluxos do teste preditos um por chamada, sorteados com a seed da execução.
+# Escolha nossa: bastam para a mediana ser estável e cabem em poucos minutos.
+INFERENCE_BATCH_REPEATS = 5
+INFERENCE_SINGLE_FLOWS = 1000
+
+# Predições de fluxo único feitas antes da medição, para que a primeira chamada
+# de cada modelo, mais lenta, não entre na mediana. Escolha nossa.
+INFERENCE_SINGLE_WARMUP = 10
+
+# Faixa, em múltiplos da razão de nós por fluxo, fora da qual a razão de tempo
+# em lote de um par é resultado inesperado: de metade ao dobro.
+INFERENCE_NODE_RATIO_BAND = (0.5, 2.0)
+
+# Trilhas aceitas no registro de resultados. As duas primeiras são a reprodução
+# como o artigo descreve e o protocolo consertado; "variante" é para leituras
+# alternativas do texto do artigo e "dados" para etapas que não treinam modelo.
+TRACKS = ["fiel", "corrigida", "variante", "dados"]
+
+# Caminhos. A raiz é a pasta que contém src/, descoberta a partir deste arquivo,
+# para que os scripts gravem no mesmo lugar de qualquer diretório em que rodem.
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+DATA_RAW_DIR = PROJECT_ROOT / "data" / "raw"
+DATA_PROCESSED_DIR = PROJECT_ROOT / "data" / "processed"
+RESULTS_DIR = PROJECT_ROOT / "results"
+CIRA_ZIP_PATH = DATA_RAW_DIR / "cira" / "Total_CSVs.zip"
+MALICIOUS_ZIP_PATH = DATA_RAW_DIR / "cira" / "MaliciousDoH-CSVs.zip"
+CIRA_PARQUET_PATH = DATA_PROCESSED_DIR / "cira.parquet"
+HKD_CSV_PATH = DATA_RAW_DIR / "hkd" / "DoH-CSVs" / "DoH-CSVs-48h" / "Total-48h.csv"
+HKD_AUGMENTED_CSV_PATH = DATA_RAW_DIR / "hkd" / "Total-48h-Augmentation.csv"
+# Arquivos de nível 1, 2 e 3 do combinado, nessa ordem.
+COMBINED_CSV_PATHS = [
+    DATA_RAW_DIR / "combinado" / "l1-total-add.csv",
+    DATA_RAW_DIR / "combinado" / "l2-total-add.csv",
+    DATA_RAW_DIR / "combinado" / "l3-total-add.csv",
+]
+HKD_PARQUET_PATH = DATA_PROCESSED_DIR / "hkd.parquet"
+COMBINED_PARQUET_PATH = DATA_PROCESSED_DIR / "combinado.parquet"
+COMBINED_UNIQUE_PARQUET_PATH = DATA_PROCESSED_DIR / "combinado_sem_replicas.parquet"
+
+
+def smote_seed(seed: int, subset_index: int) -> int:
+    """Devolve a seed do SMOTE do subconjunto de índice `subset_index`.
+
+    Cada subconjunto precisa de um sorteio próprio, e o valor não pode coincidir
+    com o de outra execução: `seed * 100 + subset_index` não colide entre as
+    seeds 0 a 9 e 42 com três subconjuntos. Os Random Forests e o
+    meta-classificador usam `seed` diretamente.
+    """
+    return seed * 100 + subset_index

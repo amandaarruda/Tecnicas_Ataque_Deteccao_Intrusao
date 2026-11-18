@@ -1,0 +1,17 @@
+PROJETO CIN0114 - IDS EXPLICÁVEL PARA ATAQUES DNS OVER HTTPS
+Técnicas de Ataque e Detecção de Intrusão, 2026.2
+Prof. Paulo Freitas de Araujo Filho
+Equipe: Amanda Arruda Melo Silva, Breno Silva Xavier de Souza e João Henrique Portela.
+
+ESCOPO
+
+1. Reimplementar e avaliar o sistema de Zebin, Rezvy e Luo no CIRA-CIC-DoHBrw-2020.
+2. Avaliar o mesmo sistema no combinado CIRA + DoH-Tunnel-Traffic-HKD e medir a transferência para o HKD.
+3. Apresentar comparações complementares de balanceamento, hiperparâmetros, robustez e custo de inferência. Esses experimentos não constituem proposta de melhoria para pontuação extra.
+
+ONDE ENCONTRAR
+
+- README.md: visão geral, resultados principais e equipe.
+- project/README.md: instalação, dados e ordem dos experimentos.
+- project/results/: métricas, configuração, hipóteses e análise dos experimentos.
+- project/report/: tabelas e figuras dos experimentos.

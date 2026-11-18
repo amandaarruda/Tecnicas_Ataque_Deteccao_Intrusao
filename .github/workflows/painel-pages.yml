@@ -1,0 +1,38 @@
+name: Publicar painel no GitHub Pages
+
+# Executar manualmente quando o novo repositório público estiver pronto.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: true
+
+jobs:
+  publicar:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/configure-pages@v5
+      - name: Conferir os arquivos públicos
+        run: |
+          test -s painel/index.html
+          test -s painel/app.js
+          test -s painel/dados.json
+          test -s painel/vendor/plotly.min.js
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: painel
+      - name: Publicar
+        id: deployment
+        uses: actions/deploy-pages@v4
